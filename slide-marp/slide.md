@@ -1,5 +1,5 @@
 ---
-marp: false
+marp: true
 theme: default
 paginate: true
 size: 16:9
@@ -45,7 +45,10 @@ style: |
     border-radius: 12px;
     border: 2px solid #ccc;
   }
-  section.demo-slide h1 { color: #60a5fa; }
+
+  table { margin-left: auto; margin-right: auto; border-collapse: collapse; font-size: 26px; }
+  th { background-color: #eff6ff; color: #1e3a8a; border-bottom: 3px solid #2563eb; text-align: center;}
+  td { border-bottom: 1px solid #cbd5e1; padding: 12px; }
 ---
 
 # Trích xuất dữ liệu từ tài liệu
@@ -76,15 +79,43 @@ Chúng ta thường gặp 2 loại file chính:
 ---
 
 # DEMO TIME (PHẦN 1)
-### Cách tiếp cận "Truyền thống"
+### Kịch bản A: Digital Invoice
 
-**Kịch bản:** Chúng ta sẽ thử đọc một **Hóa đơn Scan** bằng thư viện `pdfplumber`.
+**Mục tiêu:** Parse một file digital invoice
+**Công cụ:** `pdfplumber`
+**Dự đoán:** Sẽ xử lý mượt mà, lấy được bảng đẹp.
 
-*(Chuyển sang màn hình Streamlit)*
+*(Chuyển sang màn hình Streamlit - Mode Traditional)*
 
 ---
 
-# 2. Tại sao nó thất bại? (Nguyên lý)
+# 2. Tại sao nó làm tốt? (Sức mạnh của `pdfplumber`)
+
+Chúng ta vừa thấy `pdfplumber` xử lý file Digital cực nhanh và chính xác. Đây là lý do nó là "Vua" của Digital PDFs:
+
+
+<div class="col" style="border-left: 5px solid #3b82f6;">
+
+### Ưu điểm vượt trội
+1.  **Table Extraction:** Khả năng xử lý bằng rất tốt (xử lý merged cells, lines).
+2.  **Độ chính xác 100%:** Đọc trực tiếp mã nguồn PDF, không bao giờ "nhìn nhầm" số.
+3.  **Tốc độ:** Xử lý ngay lập tức (Real-time).
+
+</div>
+
+
+---
+
+# DEMO TIME (PHẦN 2)
+### Kịch bản B: Scanned Invoice
+
+Mục tiêu: Thử thách pdfplumber với file ảnh chụp (Scan). Dự đoán: ???
+
+(Chuyển sang màn hình Streamlit - Vẫn Mode Traditional)
+
+---
+
+# 3. Tại sao nó thất bại? (Nguyên lý)
 
 Công cụ chúng ta vừa dùng (`pdfplumber`) hoạt động dựa trên **Tọa độ (Coordinate-based)**.
 
@@ -150,7 +181,7 @@ PDF không phải là dạng plain text, nó là một cây đối tượng (Obj
 
 ---
 
-# 3. Giải pháp: Computer Vision (AI)
+# 4. Giải pháp: Computer Vision (AI)
 
 Khi cấu trúc cây (Object Tree) không chứa dữ liệu văn bản, ta cần một mô hình bỏ qua cấu trúc cây và **"nhìn"** vào điểm ảnh (Pixels) như con người.
 
@@ -208,7 +239,7 @@ Thay vì tìm tọa độ (x, y) trong metadata, AI xử lý **Mảng các đi�
 
 ---
 
-# 4. So sánh & Chiến lược
+# 5. So sánh & Chiến lược
 
 Khi nào nên dùng cái nào?
 
@@ -217,7 +248,9 @@ Khi nào nên dùng cái nào?
 | Tính năng | Truyền thống (`pdfplumber`) | AI Hiện đại (OCR/Vision) |
 | :--- | :--- | :--- |
 | **Phương pháp** | Đọc Metadata của PDF | Đọc Pixels |
+| **Xử lý Bảng (Table)** | **Xuất sắc** (Giữ đúng cấu trúc) | Khá (Cần xử lý hậu kỳ nhiều) |
 | **Tốc độ** | **Siêu nhanh** (ms) | **Chậm hơn** (giây) |
+| **Độ tin cậy** | **~100%** | ~98% (Có thể "hallucinate"/nhìn nhầm) |
 | **Chi phí** | Miễn phí / Tốn ít CPU | Cao (Cần GPU / API) |
 | **File Scan** | Bó tay | **Xuất sắc** |
 | **Độ chính xác** | 100% (nếu là file gốc) | ~95-99% (Xác suất) |
@@ -228,7 +261,7 @@ Khi nào nên dùng cái nào?
 
 ---
 
-# 5. Beyond the Basics: Enterprise Tools
+# 6. Beyond the Basics: Enterprise Tools
 
 > Trong thực tế Production, chúng ta thay thế script thủ công bằng các công cụ chuyên dụng.
 
@@ -278,7 +311,7 @@ Khi nào nên dùng cái nào?
 
 ---
 
-# 6. The Ultimate Goal: Automated Pipeline
+# 7. The Ultimate Goal: Automated Pipeline
 
 Kết hợp tất cả lại, đây là kiến trúc chuẩn cho một hệ thống **RAG** hoặc **Data Entry** tự động:
 

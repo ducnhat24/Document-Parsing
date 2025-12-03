@@ -55,37 +55,78 @@ with col1:
         with pdfplumber.open(uploaded_file) as pdf:
             page = pdf.pages[0]
             im = page.to_image(resolution=200) 
-            st.image(im.original, use_container_width=True, caption="Visual Preview")
+            st.image(im.original, width='stretch', caption="Visual Preview")
 
 with col2:
     st.subheader("Extraction Result")
     
-    if uploaded_file and st.button("Run Parsing", use_container_width=True):
-        
+    if uploaded_file and st.button("Run Parsing", width='stretch'):
         # === MODE 1: TRADITIONAL (PDFPLUMBER) ===
         if parsing_mode == "1. Traditional (pdfplumber)":
             start_time = time.time()
-            with st.spinner("Parsing PDF Object Tree..."):
+            with st.spinner("Analyzing Layout & Extracting Data..."):
                 with pdfplumber.open(uploaded_file) as pdf:
                     page = pdf.pages[0]
-                    # 1. Tạo ảnh visual debugging
-                    im = page.to_image(resolution=150)
-                    im.draw_rects(page.extract_words(), stroke="red", stroke_width=2)
                     
-                    st.image(im.annotated, caption="Visualizing Bounding Boxes (How pdfplumber sees text)", use_container_width=True)
+                    # --- BƯỚC 1: VISUAL DEBUGGING (VẼ KHUNG) ---
+                    im = page.to_image(resolution=150)
+                    debug_table = page.debug_tablefinder()
+                    
+                    # Logic vẽ khung đỏ
+                    if debug_table and debug_table.cells:
+                        im.draw_rects(debug_table.cells, stroke="red", stroke_width=2)
+                        st.image(im.annotated, caption="Visualizing Structure (Red Cells)", width='stretch')
+                    else:
+                        # Nếu file Scan, thường sẽ rơi vào đây (không tìm thấy cell nào)
+                        st.image(im.original, caption="Visualizing Structure: NO CELLS FOUND", width='stretch')
+                        st.warning("Visual Check: pdfplumber không tìm thấy cấu trúc bảng/ô nào.")
+
+                    # --- BƯỚC 2: TRÍCH XUẤT DỮ LIỆU ---
+                    table = page.extract_table() 
                     text = page.extract_text()
                     
                     end_time = time.time()
                     duration = end_time - start_time
                     
-                    if text and len(text.strip()) > 5:
-                        st.markdown(f'<div class="success-box">Success ({duration:.4f}s)</div>', unsafe_allow_html=True)
-                        st.text_area("Raw Output:", text, height=300)
-                        st.info("Analysis: Text layer detected via coordinates.")
+                    # --- BƯỚC 3: KIỂM TRA KẾT QUẢ & HIỂN THỊ ---
+                    
+                    # TRƯỜNG HỢP 1: TÌM THẤY BẢNG (Thành công mỹ mãn)
+                    if table and len(table) > 0:
+                        st.markdown(f'<div class="success-box">Table Detected ({duration:.4f}s)</div>', unsafe_allow_html=True)
+                        
+                        import pandas as pd
+                        # Xử lý header trùng lặp (như đã fix trước đó)
+                        raw_header = table[0]
+                        cleaned_header = []
+                        if raw_header:
+                            for i, col in enumerate(raw_header):
+                                col_name = f"Col_{i}" if (col is None or col == "") else str(col).replace('\n', ' ')
+                                if col_name in cleaned_header: col_name = f"{col_name}_{i}"
+                                cleaned_header.append(col_name)
+                            
+                            df = pd.DataFrame(table[1:], columns=cleaned_header)
+                        else:
+                            df = pd.DataFrame(table)
+
+                        st.dataframe(df, width='stretch')
+                        st.success("Analysis: Structure identified via PDF Vector Lines.")
+
+                    # TRƯỜNG HỢP 2: KHÔNG CÓ BẢNG, NHƯNG CÓ CHỮ (Vẫn OK, ví dụ văn bản thường)
+                    elif text and len(text.strip()) > 10:
+                        st.markdown(f'<div class="info-box">No Table, but Text Found ({duration:.4f}s)</div>', unsafe_allow_html=True)
+                        st.text_area("Raw Text Output:", text, height=300)
+                        st.info("Analysis: No table lines detected, but Text Object exists.")
+
+                    # TRƯỜNG HỢP 3: KHÔNG BẢNG, KHÔNG CHỮ -> FILE SCAN (THẤT BẠI TOÀN TẬP)
                     else:
-                        st.markdown(f'<div class="fail-box">Failed ({duration:.4f}s)</div>', unsafe_allow_html=True)
-                        st.warning("Analysis: Returns Empty. No selectable text layer found.")
-                        st.error("Conclusion: This is a scanned document/image. Traditional parsers cannot read it.")
+                        st.markdown(f'<div class="fail-box">EXTRACTION FAILED ({duration:.4f}s)</div>', unsafe_allow_html=True)
+                        st.error("Conclusion: This is a SCANNED DOCUMENT (Image).")
+                        st.markdown("""
+                        **Why it failed?**
+                        - No `Table Objects` (Lines/Rectangles) found.
+                        - No `Text Objects` found in the PDF tree.
+                        - To `pdfplumber`, this is just a blank page with a picture.
+                        """)
 
         # === MODE 2: REAL AI (EASYOCR) ===
         # else: 
@@ -130,7 +171,7 @@ with col2:
         #         st.markdown(f'<div class="success-box">AI Vision Successful ({duration:.2f}s)</div>', unsafe_allow_html=True)
                 
         #         # Hiển thị ảnh ĐÃ VẼ KHUNG (Visual Proof)
-        #         st.image(annotated_img, caption="AI Vision: Detected Text Patterns (Green Boxes)", use_container_width=True)
+        #         st.image(annotated_img, caption="AI Vision: Detected Text Patterns (Green Boxes)", width='stretch')
                 
         #         # Hiển thị Text
         #         with st.expander("See Extracted Text"):
@@ -180,7 +221,7 @@ with col2:
                 # 4. Hiển thị kết quả
                 st.markdown(f'<div class="success-box">AI Vision Successful ({duration:.2f}s)</div>', unsafe_allow_html=True)
                 
-                st.image(annotated_img, caption="AI Vision: Detected Paragraphs (Green Boxes)", use_container_width=True)
+                st.image(annotated_img, caption="AI Vision: Detected Paragraphs (Green Boxes)", width='stretch')
                 
                 with st.expander("See Extracted Text"):
                     st.text(full_text)
