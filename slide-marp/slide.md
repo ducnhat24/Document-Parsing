@@ -329,3 +329,9 @@ Kết hợp tất cả lại, đây là kiến trúc chuẩn cho một hệ th�
 - **Frontend:** Streamlit
 - **Thư viện:** pdfplumber
 - **Concept:** OCR & Vision Transformers
+
+<center>
+
+![w:400 center drop-shadow](./images/qrcode.png)
+
+<center>
